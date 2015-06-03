@@ -1,7 +1,3 @@
 Cargo.lock
 /target
 /libhdf5-sys/target
-
-# Vagrant
-.vagrant/
-
