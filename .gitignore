@@ -2,6 +2,10 @@ Cargo.lock
 /target
 /libhdf5-sys/target
 
+# Vim
+*~
+.swp
+
 # Vagrant
 .vagrant/
 
