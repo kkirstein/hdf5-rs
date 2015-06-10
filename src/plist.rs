@@ -1,27 +1,24 @@
-use ffi::h5i::hid_t;
-use ffi::h5p::H5Pclose;
+use ffi::h5i::{H5I_GENPROP_LST, hid_t};
 
-use object::{Handle, Object};
+use error::Result;
+use handle::{Handle, ID, get_id_type};
+use object::Object;
 
-#[derive(Clone)]
 pub struct PropertyList {
     handle: Handle,
 }
 
-impl Object for PropertyList {
+impl ID for PropertyList {
     fn id(&self) -> hid_t {
         self.handle.id()
     }
 
-    fn from_id(id: hid_t) -> PropertyList {
-        PropertyList { handle: Handle::new(id) }
-    }
-}
-
-impl Drop for PropertyList {
-    fn drop(&mut self) {
-        if self.refcount() == 1 {
-            h5lock!(H5Pclose(self.id()));
+    fn from_id(id: hid_t) -> Result<PropertyList> {
+        match get_id_type(id) {
+            H5I_GENPROP_LST => Ok(PropertyList { handle: try!(Handle::new(id)) }),
+            _               => Err(From::from(format!("Invalid property list id: {}", id))),
         }
     }
 }
+
+impl Object for PropertyList {}
