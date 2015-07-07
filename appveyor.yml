@@ -34,8 +34,6 @@ install:
   # output version info
   - rustc --version
   - cargo --version
-#- ps: if($env:RUST_TARGET -match "msvc") { & cl }
-  - cl
 
 build: false
 
