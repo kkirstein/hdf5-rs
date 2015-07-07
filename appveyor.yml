@@ -6,30 +6,70 @@
 version: 0.1.{build}
 
 environment:
-  RUST_TARGET: x86_64-pc-windows-gnu
+  #RUST_TARGET: x86_64-pc-windows-gnu
   #RUST_VERSION: 1.1.0
-  HDF5_LIBDIR: C:\hdf5_bin
+  HDF5_LIBDIR: C:\hdf5\bin
 
   matrix:
     - RUST_VERSION: 1.1.0
+      RUST_TARGET: x86_64-pc-windows-gnu
     - RUST_VERSION: nightly
+      RUST_TARGET: x86_64-pc-windows-gnu
+    - RUST_VERSION: nightly
+      RUST_TARGET: x86_64-pc-windows-msvc
+
+matrix:
+  allow_failures:
+    - RUST_VERSION: nightly
+      RUST_TARGET: x86_64-pc-windows-msvc
 
 install:
   # get rust & cargo
-  - ps: Start-FileDownload "https://static.rust-lang.org/dist/rust-${env:RUST_VERSION}-${env:RUST_TARGET}.exe"
-  - rust-%RUST_VERSION%-%RUST_TARGET%.exe /VERYSILENT /NORESTART /DIR="C:\Program Files\Rust-%RUST_VERSION%"
-  - set PATH=%PATH%;C:\Program Files\Rust-%RUST_VERSION%\bin
+  - ps: >-
+      Invoke-WebRequest "https://static.rust-lang.org/dist/rust-${env:RUST_VERSION}-${env:RUST_TARGET}.exe" -OutFile ".\rust-${env:RUST_VERSION}-${env:RUST_TARGET}.exe"
 
-  # get hdf5 binary (just get a prebuild binary for now)
-  - mkdir C:\hdf5_bin
-  - ps: Invoke-WebRequest "https://github.com/kkirstein/hdf5-rs/releases/download/alpha/hdf5.dll" -OutFile "C:\hdf5_bin\hdf5.dll"
-  - set PATH=C:\hdf5_bin;%PATH%
+      Start-Process -FilePath "rust-${env:RUST_VERSION}-${env:RUST_TARGET}.exe" -Wait -ArgumentList '/VERYSILENT /NORESTART /DIR="C:\Program Files\Rust"'
+
+      # load HDF5 binary for MSVC or MinGW ABI
+
+      if ($env:RUST_TARGET -match "msvc") {
+
+        mkdir .\temp > $null
+
+        Invoke-WebRequest "https://repo.continuum.io/pkgs/free/win-64/hdf5-1.8.15.1-2.tar.bz2" -OutFile '.\temp\hdf5-1.8.15.1-2.tar.bz2'
+
+        & '7z' --% x .\temp\hdf5-1.8.15.1-2.tar.bz2 -o.\temp 
+                                                              
+        & '7z' --% x .\temp\hdf5-1.8.15.1-2.tar -o.\temp 
+
+        dir .\temp
+
+        mkdir "${env:HDF5_LIBDIR}" > $null
+
+        Copy-Item -Path .\temp\Library\bin\* -Destination "${env:HDF5_LIBDIR}"
+
+      } else {
+
+        mkdir "${env:HDF5_LIBDIR}" > $null
+
+        Invoke-WebRequest "https://github.com/kkirstein/hdf5-rs/releases/download/alpha/hdf5.dll" -OutFile "C:\hdf5\bin\hdf5.dll"
+
+      }
+
+build: false
+
+before_test:
+  - set PATH=%HDF5_LIBDIR%;C:\Program Files\Rust\bin;%PATH%
+
+  # conditionally add msvc to environment with ps is not straight forward, so we enable it anyway:
+  - '"C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64'
+  #- '"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" x64'
+
+  - echo %PATH%
 
   # output version info
   - rustc --version
   - cargo --version
-
-build: false
 
 test_script:
   - cargo test --verbose
