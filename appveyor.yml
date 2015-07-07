@@ -23,7 +23,8 @@ install:
   - ps: Start-FileDownload "https://static.rust-lang.org/dist/rust-${env:RUST_VERSION}-${env:RUST_TARGET}.exe"
   - rust-%RUST_VERSION%-%RUST_TARGET%.exe /VERYSILENT /NORESTART /DIR="C:\Program Files\Rust-%RUST_VERSION%-%RUST_TARGET%"
   - set PATH=%PATH%;C:\Program Files\Rust-%RUST_VERSION%-%RUST_TARGET%\bin
-  - ps: if($env:RUST_TARGET -match "msvc") { & 'C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat' x64 }
+#- ps: if($env:RUST_TARGET -match "msvc") { & 'C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat' x64 }
+  - "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" x64
 
   # get hdf5 binary (just get a prebuild binary for now)
   - mkdir C:\hdf5_bin
@@ -33,7 +34,8 @@ install:
   # output version info
   - rustc --version
   - cargo --version
-  - ps: if($env:RUST_TARGET -match "msvc") { & cl }
+#- ps: if($env:RUST_TARGET -match "msvc") { & cl }
+  - cl
 
 build: false
 
